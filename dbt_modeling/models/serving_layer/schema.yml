@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  - name: dim_users
+    description: "使用者維度表，包含 user_id、姓名、註冊時間與國家資訊"
+    columns:
+      - name: user_key
+        description: "user 的 surrogate key（由 user_id 雜湊生成）"
+        tests: [unique, not_null]
+      - name: user_id
+        description: "原始使用者 ID"
+      - name: user_lastname
+      - name: user_name
+      - name: user_since
+      - name: country_code
+
+  - name: dim_songs
+    description: "歌曲維度表，來自 songs 原始資料表"
+    columns:
+      - name: song_key
+        tests: [unique, not_null]
+      - name: track_id
+      - name: song_id
+      - name: song_title
+      - name: release
+      - name: year
+      - name: duration
+
+  - name: dim_artists
+    description: "藝術家維度表，來自 songs 原始資料表中 artist 欄位"
+    columns:
+      - name: artist_key
+        tests: [unique, not_null]
+      - name: artist_id
+      - name: artist_name
+      - name: artist_familiarity
+      - name: artist_hotness
+
+  - name: dim_dates
+    description: "時間維度表，根據 session_start_time 派生"
+    columns:
+      - name: date_day
+        description: "實際日期（主鍵）"
+        tests: [unique, not_null]
+      - name: day_of_week
+      - name: day_of_month
+      - name: day_of_year
+      - name: week_of_year
+      - name: month_of_year
+      - name: month_name
+      - name: quarter_of_year
+      - name: year_number
+
+  - name: fact_order
+    description: "事實表：每一首歌被播放時的 session 記錄，連接各個維度"
+    columns:
+      - name: fact_key
+        tests: [unique, not_null]
+      - name: session_id
+      - name: song_id
+      - name: song_key
+        tests:
+          - relationships:
+              to: ref('dim_songs')
+              field: song_key
+      - name: user_key
+        tests:
+          - relationships:
+              to: ref('dim_users')
+              field: user_key
+      - name: artist_key
+        tests:
+          - relationships:
+              to: ref('dim_artists')
+              field: artist_key
+      - name: session_start_time_date_key
+        description: "事實表中的 session 發生日期，用來連結 dim_dates"
+        tests:
+          - relationships:
+              to: ref('dim_dates')
+              field: date_day
+      - name: session_start_time
+      - name: price
+      - name: liked
+      - name: liked_since

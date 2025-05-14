@@ -1,0 +1,208 @@
+[0m[1mmodule.extract_job.data.aws_security_group.db_sg: Reading...[0m[0m
+[0m[1mmodule.extract_job.data.aws_subnet.public_a: Reading...[0m[0m
+[0m[1mmodule.extract_job.data.aws_iam_policy_document.glue_base_policy: Reading...[0m[0m
+[0m[1mmodule.extract_job.data.aws_caller_identity.current: Reading...[0m[0m
+[0m[1mmodule.extract_job.data.aws_iam_policy_document.glue_access_policy: Reading...[0m[0m
+[0m[1mmodule.extract_job.data.aws_iam_policy_document.glue_access_policy: Read complete after 0s [id=2526717434][0m
+[0m[1mmodule.extract_job.data.aws_iam_policy_document.glue_base_policy: Read complete after 0s [id=3940084333][0m
+[0m[1mmodule.extract_job.data.aws_caller_identity.current: Read complete after 0s [id=810179566955][0m
+[0m[1mmodule.extract_job.data.aws_security_group.db_sg: Read complete after 0s [id=sg-025921360b99598d3][0m
+[0m[1mmodule.extract_job.data.aws_subnet.public_a: Read complete after 0s [id=subnet-0aff44ee171e00c01][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform will perform the following actions:
+
+[1m  # module.extract_job.aws_glue_connection.rds_connection[0m will be created
+[0m  [32m+[0m[0m resource "aws_glue_connection" "rds_connection" {
+      [32m+[0m[0m arn                   = (known after apply)
+      [32m+[0m[0m catalog_id            = (known after apply)
+      [32m+[0m[0m connection_properties = (sensitive value)
+      [32m+[0m[0m connection_type       = "JDBC"
+      [32m+[0m[0m id                    = (known after apply)
+      [32m+[0m[0m name                  = "de-c4w4a1-connection-rds"
+      [32m+[0m[0m tags_all              = (known after apply)
+
+      [32m+[0m[0m physical_connection_requirements {
+          [32m+[0m[0m availability_zone      = "us-east-1a"
+          [32m+[0m[0m security_group_id_list = [
+              [32m+[0m[0m "sg-025921360b99598d3",
+            ]
+          [32m+[0m[0m subnet_id              = "subnet-0aff44ee171e00c01"
+        }
+    }
+
+[1m  # module.extract_job.aws_glue_job.api_sessions_ingestion_etl_job[0m will be created
+[0m  [32m+[0m[0m resource "aws_glue_job" "api_sessions_ingestion_etl_job" {
+      [32m+[0m[0m arn               = (known after apply)
+      [32m+[0m[0m default_arguments = {
+          [32m+[0m[0m "--api_end_date"        = "2020-01-31"
+          [32m+[0m[0m "--api_start_date"      = "2020-01-01"
+          [32m+[0m[0m "--api_url"             = "http://ec2-3-229-51-123.compute-1.amazonaws.com/sessions"
+          [32m+[0m[0m "--enable-job-insights" = "true"
+          [32m+[0m[0m "--job-language"        = "python"
+          [32m+[0m[0m "--target_path"         = "s3://de-c4w4a1-810179566955-us-east-1-data-lake/landing_zone/api/sessions"
+        }
+      [32m+[0m[0m glue_version      = "4.0"
+      [32m+[0m[0m id                = (known after apply)
+      [32m+[0m[0m max_capacity      = (known after apply)
+      [32m+[0m[0m name              = "de-c4w4a1-api-sessions-extract-job"
+      [32m+[0m[0m number_of_workers = 2
+      [32m+[0m[0m role_arn          = (known after apply)
+      [32m+[0m[0m tags_all          = (known after apply)
+      [32m+[0m[0m timeout           = 5
+      [32m+[0m[0m worker_type       = "G.1X"
+
+      [32m+[0m[0m command {
+          [32m+[0m[0m name            = "glueetl"
+          [32m+[0m[0m python_version  = "3"
+          [32m+[0m[0m runtime         = (known after apply)
+          [32m+[0m[0m script_location = "s3://de-c4w4a1-810179566955-us-east-1-scripts/de-c4w4a1-api-extract-job.py"
+        }
+
+      [32m+[0m[0m execution_property (known after apply)
+
+      [32m+[0m[0m notification_property (known after apply)
+    }
+
+[1m  # module.extract_job.aws_glue_job.api_users_ingestion_etl_job[0m will be created
+[0m  [32m+[0m[0m resource "aws_glue_job" "api_users_ingestion_etl_job" {
+      [32m+[0m[0m arn               = (known after apply)
+      [32m+[0m[0m default_arguments = {
+          [32m+[0m[0m "--api_end_date"        = "2020-01-31"
+          [32m+[0m[0m "--api_start_date"      = "2020-01-01"
+          [32m+[0m[0m "--api_url"             = "http://ec2-3-229-51-123.compute-1.amazonaws.com/users"
+          [32m+[0m[0m "--enable-job-insights" = "true"
+          [32m+[0m[0m "--job-language"        = "python"
+          [32m+[0m[0m "--target_path"         = "s3://de-c4w4a1-810179566955-us-east-1-data-lake/landing_zone/api/users"
+        }
+      [32m+[0m[0m glue_version      = "4.0"
+      [32m+[0m[0m id                = (known after apply)
+      [32m+[0m[0m max_capacity      = (known after apply)
+      [32m+[0m[0m name              = "de-c4w4a1-api-users-extract-job"
+      [32m+[0m[0m number_of_workers = 2
+      [32m+[0m[0m role_arn          = (known after apply)
+      [32m+[0m[0m tags_all          = (known after apply)
+      [32m+[0m[0m timeout           = 5
+      [32m+[0m[0m worker_type       = "G.1X"
+
+      [32m+[0m[0m command {
+          [32m+[0m[0m name            = "glueetl"
+          [32m+[0m[0m python_version  = "3"
+          [32m+[0m[0m runtime         = (known after apply)
+          [32m+[0m[0m script_location = "s3://de-c4w4a1-810179566955-us-east-1-scripts/de-c4w4a1-api-extract-job.py"
+        }
+
+      [32m+[0m[0m execution_property (known after apply)
+
+      [32m+[0m[0m notification_property (known after apply)
+    }
+
+[1m  # module.extract_job.aws_glue_job.rds_ingestion_etl_job[0m will be created
+[0m  [32m+[0m[0m resource "aws_glue_job" "rds_ingestion_etl_job" {
+      [32m+[0m[0m arn               = (known after apply)
+      [32m+[0m[0m connections       = [
+          [32m+[0m[0m "de-c4w4a1-connection-rds",
+        ]
+      [32m+[0m[0m default_arguments = {
+          [32m+[0m[0m "--data_lake_bucket"    = "de-c4w4a1-810179566955-us-east-1-data-lake"
+          [32m+[0m[0m "--enable-job-insights" = "true"
+          [32m+[0m[0m "--job-language"        = "python"
+          [32m+[0m[0m "--rds_connection"      = "de-c4w4a1-connection-rds"
+        }
+      [32m+[0m[0m glue_version      = "4.0"
+      [32m+[0m[0m id                = (known after apply)
+      [32m+[0m[0m max_capacity      = (known after apply)
+      [32m+[0m[0m name              = "de-c4w4a1-rds-extract-job"
+      [32m+[0m[0m number_of_workers = 2
+      [32m+[0m[0m role_arn          = (known after apply)
+      [32m+[0m[0m tags_all          = (known after apply)
+      [32m+[0m[0m timeout           = 5
+      [32m+[0m[0m worker_type       = "G.1X"
+
+      [32m+[0m[0m command {
+          [32m+[0m[0m name            = "glueetl"
+          [32m+[0m[0m python_version  = "3"
+          [32m+[0m[0m runtime         = (known after apply)
+          [32m+[0m[0m script_location = "s3://de-c4w4a1-810179566955-us-east-1-scripts/de-c4w4a1-extract-songs-job.py"
+        }
+
+      [32m+[0m[0m execution_property (known after apply)
+
+      [32m+[0m[0m notification_property (known after apply)
+    }
+
+[1m  # module.extract_job.aws_iam_role.glue_role[0m will be created
+[0m  [32m+[0m[0m resource "aws_iam_role" "glue_role" {
+      [32m+[0m[0m arn                   = (known after apply)
+      [32m+[0m[0m assume_role_policy    = jsonencode(
+            {
+              [32m+[0m[0m Statement = [
+                  [32m+[0m[0m {
+                      [32m+[0m[0m Action    = "sts:AssumeRole"
+                      [32m+[0m[0m Effect    = "Allow"
+                      [32m+[0m[0m Principal = {
+                          [32m+[0m[0m Service = "glue.amazonaws.com"
+                        }
+                      [32m+[0m[0m Sid       = "AllowGlueToAssumeRole"
+                    },
+                ]
+              [32m+[0m[0m Version   = "2012-10-17"
+            }
+        )
+      [32m+[0m[0m create_date           = (known after apply)
+      [32m+[0m[0m force_detach_policies = false
+      [32m+[0m[0m id                    = (known after apply)
+      [32m+[0m[0m managed_policy_arns   = (known after apply)
+      [32m+[0m[0m max_session_duration  = 3600
+      [32m+[0m[0m name                  = "de-c4w4a1-glue-role"
+      [32m+[0m[0m name_prefix           = (known after apply)
+      [32m+[0m[0m path                  = "/"
+      [32m+[0m[0m tags_all              = (known after apply)
+      [32m+[0m[0m unique_id             = (known after apply)
+
+      [32m+[0m[0m inline_policy (known after apply)
+    }
+
+[1m  # module.extract_job.aws_iam_role_policy.task_role_policy[0m will be created
+[0m  [32m+[0m[0m resource "aws_iam_role_policy" "task_role_policy" {
+      [32m+[0m[0m id          = (known after apply)
+      [32m+[0m[0m name        = "de-c4w4a1-glue-role-policy"
+      [32m+[0m[0m name_prefix = (known after apply)
+      [32m+[0m[0m policy      = jsonencode(
+            {
+              [32m+[0m[0m Statement = [
+                  [32m+[0m[0m {
+                      [32m+[0m[0m Action   = [
+                          [32m+[0m[0m "sqs:*",
+                          [32m+[0m[0m "s3:*",
+                          [32m+[0m[0m "rds:*",
+                          [32m+[0m[0m "logs:*",
+                          [32m+[0m[0m "iam:*",
+                          [32m+[0m[0m "glue:*",
+                          [32m+[0m[0m "ec2:*",
+                          [32m+[0m[0m "cloudwatch:*",
+                          [32m+[0m[0m "cloudtrail:*",
+                        ]
+                      [32m+[0m[0m Effect   = "Allow"
+                      [32m+[0m[0m Resource = "*"
+                      [32m+[0m[0m Sid      = "AllowGlueAccess"
+                    },
+                ]
+              [32m+[0m[0m Version   = "2012-10-17"
+            }
+        )
+      [32m+[0m[0m role        = (known after apply)
+    }
+
+[1mPlan:[0m 6 to add, 0 to change, 0 to destroy.
+[0m
+Changes to Outputs:
+  [32m+[0m[0m glue_role_arn                   = (known after apply)
+[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.

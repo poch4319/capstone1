@@ -1,0 +1,14 @@
+
+Error: creating Glue Connection (de-c4w4a1-connection-rds): operation error Glue: CreateConnection, https response error StatusCode: 400, RequestID: 502caca3-843c-49cd-b1a8-063c89d227ac, AlreadyExistsException: Connection already exists.
+
+  with module.extract_job.aws_glue_connection.rds_connection,
+  on modules/extract_job/glue.tf line 2, in resource "aws_glue_connection" "rds_connection":
+   2: resource "aws_glue_connection" "rds_connection" {
+
+
+Error: creating IAM Role (de-c4w4a1-glue-role): operation error IAM: CreateRole, https response error StatusCode: 409, RequestID: d017b572-ddf6-40a0-9936-5f9d02d1c5df, EntityAlreadyExists: Role with name de-c4w4a1-glue-role already exists.
+
+  with module.extract_job.aws_iam_role.glue_role,
+  on modules/extract_job/iam.tf line 1, in resource "aws_iam_role" "glue_role":
+   1: resource "aws_iam_role" "glue_role" {
+
