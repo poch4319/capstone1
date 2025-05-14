@@ -117,13 +117,18 @@ from {{ ref('stg_purchases') }} s
 | **Star Schema**    | 提升查詢效能，供報表與資料視覺化分析使用。                            |
 
 ---
-🚀 完整 ETL Pipeline 與架構解析（DeFtunes Project）
-這個專案將資料從 RDS + API 經過三層架構（Landing → Transformation → Serving）轉換成供分析使用的 Star Schema，並利用 Glue、S3、Iceberg、Redshift、dbt、Terraform 等技術實作。
 
-🗺 架構概覽
-text
-複製
-編輯
+---
+
+## 🚀 完整 ETL Pipeline 與架構解析（DeFtunes Project）
+
+這個專案將資料從 **RDS + API** 經過三層架構（Landing → Transformation → Serving）轉換成供分析使用的 Star Schema，並利用 Glue、S3、Iceberg、Redshift、dbt、Terraform 等技術實作。
+
+---
+
+### 🗺 架構概覽
+
+```text
 ┌────────────────────────┐
 │      Source Systems    │
 │ - RDS (songs metadata) │
@@ -146,114 +151,133 @@ text
 ┌─────────────────────────────┐
 │     Serving Zone (Redshift) │ ← dbt + Star Schema
 └─────────────────────────────┘
-🧩 各個技術角色與互動細節
-1. Landing Zone (Raw Layer in S3)
-來源：
+```
 
-PostgreSQL (RDS): deftunes.songs 表格。
+---
 
-REST API: /users, /sessions
+### 🧩 各個技術角色與互動細節
 
-處理流程：
+---
 
-使用 Glue Job（PySpark）分別從 RDS 與 API 抽取資料。
+#### 1. **Landing Zone (Raw Layer in S3)**
 
-將原始 JSON 儲存到 S3 的 landing/ 子目錄。
+* **來源**：
 
-資料格式：JSON、CSV
+  * PostgreSQL (RDS): `deftunes.songs` 表格。
+  * REST API: `/users`, `/sessions`
+* **處理流程**：
 
-python
-複製
-編輯
+  * 使用 Glue Job（PySpark）分別從 RDS 與 API 抽取資料。
+  * 將原始 JSON 儲存到 S3 的 `landing/` 子目錄。
+* **資料格式**：JSON、CSV
+
+```python
 requests.get("http://{API_ENDPOINT}/sessions")
-2. Transformation Zone (Silver Layer with Apache Iceberg)
-Glue Job 將 landing zone 的 raw data：
+```
 
-轉換為結構化 schema（cast、explode nested fields）。
+---
 
-寫入 Iceberg 表格（格式為 Parquet，支援 ACID）。
+#### 2. **Transformation Zone (Silver Layer with Apache Iceberg)**
 
-使用 AWS Glue Data Catalog 建立 schema 定義與 table metadata。
+* **Glue Job** 將 landing zone 的 raw data：
 
-Schema 存儲方式：
+  * 轉換為結構化 schema（cast、explode nested fields）。
+  * 寫入 Iceberg 表格（格式為 Parquet，支援 ACID）。
+* **使用 AWS Glue Data Catalog** 建立 schema 定義與 table metadata。
+* **Schema 存儲方式**：
 
-iceberg_users, iceberg_sessions, iceberg_songs 等 Glue 表格（透過 catalog 查詢）。
+  * `iceberg_users`, `iceberg_sessions`, `iceberg_songs` 等 Glue 表格（透過 catalog 查詢）。
 
-🔎 Data Catalog 的用途：
+🔎 **Data Catalog 的用途**：
 
-儲存每個 table 的 schema。
+* 儲存每個 table 的 schema。
+* Glue / Athena / Redshift Spectrum 可以查詢 catalog 表格。
+* 整個 schema evolution 支援 versioned metadata。
 
-Glue / Athena / Redshift Spectrum 可以查詢 catalog 表格。
-
-整個 schema evolution 支援 versioned metadata。
-
-python
-複製
-編輯
+```python
 DynamicFrame → cast → write_dynamic_frame.from_options( format="iceberg" )
-3. Serving Zone (Gold Layer with Redshift + dbt)
-✳ Redshift Spectrum 介入方式：
-Spectrum 允許 Redshift 查詢 S3 中由 Glue Data Catalog 管理的 Iceberg 表格。
+```
 
-CREATE EXTERNAL SCHEMA 映射 Glue catalog 中的資料進 Redshift：
+---
 
-sql
-複製
-編輯
+#### 3. **Serving Zone (Gold Layer with Redshift + dbt)**
+
+##### ✳ Redshift Spectrum 介入方式：
+
+* Spectrum 允許 Redshift 查詢 S3 中由 Glue Data Catalog 管理的 Iceberg 表格。
+* `CREATE EXTERNAL SCHEMA` 映射 Glue catalog 中的資料進 Redshift：
+
+```sql
 CREATE EXTERNAL SCHEMA iceberg_schema
 FROM data catalog
 DATABASE 'deftunes_catalog'
 IAM_ROLE 'arn:aws:iam::xxx:role/RedshiftRole';
+```
+
 🔁 Redshift Spectrum 的角色：
 
-作為中介層讓 Redshift 能查詢 S3 中轉換後的資料。
+* 作為中介層讓 Redshift 能查詢 S3 中轉換後的資料。
+* 無需移動資料，即可 SQL 查詢。
 
-無需移動資料，即可 SQL 查詢。
+---
 
-🧱 使用 dbt 做 Star Schema 建模
-在 dbt 專案中建立以下模型：
+##### 🧱 使用 dbt 做 Star Schema 建模
 
-dim_users, dim_songs, fact_sessions
+* 在 dbt 專案中建立以下模型：
 
-模型來自 Glue Iceberg 表格（透過 Spectrum 查詢）。
+  * `dim_users`, `dim_songs`, `fact_sessions`
+* 模型來自 Glue Iceberg 表格（透過 Spectrum 查詢）。
+* 執行 `dbt run` 時，SQL 查詢會透過 Spectrum 從 S3 抓資料，然後結果會 **物化（materialize）在 Redshift 中的內部表格中**。
 
-執行 dbt run 時，SQL 查詢會透過 Spectrum 從 S3 抓資料，然後結果會 物化（materialize）在 Redshift 中的內部表格中。
+---
 
-🌟 Star Schema 使用方式
-角色	資料來源	建立方式
-dim_users	API /users → Glue → Iceberg	dbt 處理後轉為 Redshift 表
-dim_songs	RDS songs → Glue → Iceberg	dbt 處理後轉為 Redshift 表
-fact_sessions	API /sessions → Glue → Iceberg	dbt 處理後轉為 Redshift 表
+### 🌟 Star Schema 使用方式
+
+| 角色              | 資料來源                             | 建立方式                 |
+| --------------- | -------------------------------- | -------------------- |
+| `dim_users`     | API `/users` → Glue → Iceberg    | dbt 處理後轉為 Redshift 表 |
+| `dim_songs`     | RDS `songs` → Glue → Iceberg     | dbt 處理後轉為 Redshift 表 |
+| `fact_sessions` | API `/sessions` → Glue → Iceberg | dbt 處理後轉為 Redshift 表 |
 
 dbt 用來：
 
-join 多張表格
+* join 多張表格
+* 建立 surrogate key
+* 使用 Jinja macro 做資料型別轉換
+* 自動建立與測試模型
 
-建立 surrogate key
+---
 
-使用 Jinja macro 做資料型別轉換
+### 🔁 資料在各層的變化流程
 
-自動建立與測試模型
+| 層級            | 原始資料 → 處理步驟 → 結果格式                                   |                       |
+| ------------- | ---------------------------------------------------- | --------------------- |
+| **Landing**   | JSON / CSV → S3 儲存                                   | 非結構化資料                |
+| **Transform** | Glue Job (cast, filter) → Iceberg 表格                 | 結構化 Parquet 格式        |
+| **Serving**   | Redshift Spectrum 查詢 → dbt Materialize → Redshift 表格 | Star Schema 表格，供分析師使用 |
 
-🔁 資料在各層的變化流程
-層級	原始資料 → 處理步驟 → 結果格式
-Landing	JSON / CSV → S3 儲存
-Transform	Glue Job (cast, filter) → Iceberg 表格
-Serving	Redshift Spectrum 查詢 → dbt Materialize → Redshift 表格
+---
 
-🛠️ Terraform 基礎建設管理
+### 🛠️ Terraform 基礎建設管理
+
 Terraform 管理下列資源：
 
-資源	用途
-aws_s3_bucket	資料湖分區（landing, transform）
-aws_glue_job	extract, transform job
-aws_glue_catalog_table	schema 管理
-aws_redshift_cluster	資料倉儲
-aws_iam_role	Glue 與 Redshift 的角色存取權限
+| 資源                       | 用途                        |
+| ------------------------ | ------------------------- |
+| `aws_s3_bucket`          | 資料湖分區（landing, transform） |
+| `aws_glue_job`           | extract, transform job    |
+| `aws_glue_catalog_table` | schema 管理                 |
+| `aws_redshift_cluster`   | 資料倉儲                      |
+| `aws_iam_role`           | Glue 與 Redshift 的角色存取權限   |
 
-✅ 小結：各層互動摘要
-層級	技術組件	關鍵處理
-Landing	S3, Glue extract job	抽取原始資料並儲存
-Transform	Glue, Iceberg, Data Catalog	清洗轉換並註冊 schema
-Serving	Redshift + dbt + Spectrum	建模轉為 star schema 表格
+---
 
+### ✅ 小結：各層互動摘要
+
+| 層級        | 技術組件                        | 關鍵處理                |
+| --------- | --------------------------- | ------------------- |
+| Landing   | S3, Glue extract job        | 抽取原始資料並儲存           |
+| Transform | Glue, Iceberg, Data Catalog | 清洗轉換並註冊 schema      |
+| Serving   | Redshift + dbt + Spectrum   | 建模轉為 star schema 表格 |
+
+---
